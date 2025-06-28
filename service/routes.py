@@ -9,6 +9,7 @@ from service.models import Account
 from service.common import status  # HTTP Status Codes
 from . import app  # Import Flask application
 
+BASE_URL = "/accounts"
 
 ############################################################
 # Health Endpoint
@@ -67,8 +68,20 @@ def create_accounts():
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
-
-# ... place you code here to READ an account ...
+######################################################################
+# READ AN ACCOUNT
+######################################################################
+@app.route(f"{BASE_URL}/<int:account_id>", methods=["GET"])
+def get_account(account_id):
+    """
+    Reads a single Account by ID.
+    """
+    app.logger.info("Request to read Account %s", account_id)
+    account = Account.find(account_id)
+    if not account:
+        abort(status.HTTP_404_NOT_FOUND,
+              f"Account with id [{account_id}] could not be found.")
+    return account.serialize(), status.HTTP_200_OK
 
 
 ######################################################################
