@@ -18,7 +18,8 @@ app = Flask(__name__)
 app.config.from_object(config)
 
 # Enable default security headers (HSTS, X-Frame-Options, etc.)
-Talisman(app)
+Talisman(app, force_https=False)
+
 
 # Allow CORS from any origin (you can tighten this later)
 CORS(app)
