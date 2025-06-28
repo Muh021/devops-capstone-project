@@ -18,6 +18,8 @@ DATABASE_URI = os.getenv(
 )
 
 BASE_URL = "/accounts"
+HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
+
 
 
 ######################################################################
@@ -199,3 +201,20 @@ class TestAccountService(TestCase):
         """It should not Delete a non-existent Account"""
         resp = self.client.delete(f"{BASE_URL}/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_security_headers(self):
+        """It should return security headers when served over HTTPS"""
+        # Send a GET to the root URL with HTTPS enforced
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        # Expect a normal 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # These headers should now be present
+        expected = {
+            'X-Frame-Options': 'SAMEORIGIN',
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'self'; object-src 'none'",
+            'Referrer-Policy': 'strict-origin-when-cross-origin'
+        }
+        for header, value in expected.items():
+            self.assertEqual(response.headers.get(header), value)
