@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts
+  labels:
+    app: accounts            # ≤ make sure this is here
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accounts          # ≤ and this must match
+  template:
+    metadata:
+      labels:
+        app: accounts        # ≤ and this too
+    spec:
+      containers:
+        - name: accounts
+          image: us.icr.io/$SN_ICR_NAMESPACE/accounts:1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URI
+              value: postgresql://userLQN:yvXowJCxv6ylRgUl@postgresql:5432/sampledb
