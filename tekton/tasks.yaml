@@ -49,4 +49,75 @@ spec:
           # Delete files and directories starting with .. plus any other character
           rm -rf "${WORKSPACE_SOURCE_PATH}"/..?*
         fi
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lint-task
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: flake8
+      image: python:3.9-slim
+      workingDir: /workspace/source
+      script: |
+        echo "Calling Flake8 linter"
+        pip install flake8
+        flake8 service tests
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: tests-task
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: pytest
+      image: python:3.9-slim
+      workingDir: /workspace/source
+      script: |
+        echo "Running unit tests with PyUnit"
+        pip install nose coverage
+        nosetests -vv --with-spec --spec-color --with-coverage --cover-package=service
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-task
+spec:
+  params:
+    - name: image
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build
+      image: docker:20.10.7
+      script: |
+        echo "Building image for $(params.image)"
+        docker build -t $(params.image) /workspace/source
+        docker push $(params.image)
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-task
+spec:
+  params:
+    - name: branch
+      type: string
+    - name: url
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: deploy
+      image: bitnami/oc:4.7
+      script: |
+        echo "Deploying $(params.branch) branch of $(params.url)"
+        oc apply -f /workspace/source/k8s/deployment.yaml
+        oc apply -f /workspace/source/k8s/service.yaml
+---
 

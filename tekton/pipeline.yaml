@@ -22,7 +22,6 @@ spec:
           workspace: pipeline-workspace          
       taskRef:
         name: cleanup
-
     - name: clone
       workspaces:
         - name: output
@@ -36,3 +35,47 @@ spec:
         value: $(params.branch)
       runAfter:
         - init
+    - name: lint
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: flake8
+      params:
+        - name: image
+          value: "python:3.9-slim"
+        - name: args
+          value:
+            ["--count","--max-complexity=10","--max-line-length=127","--statistics"]
+      runAfter:
+        - clone
+    - name: tests
+      runAfter: [clone]
+      taskRef:
+        name: tests-task
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: build
+      runAfter: [lint, tests]
+      taskRef:
+        name: build-task
+      params:
+        - name: image
+          value: "us.icr.io/$SN_ICR_NAMESPACE/accounts:1"
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: deploy
+      runAfter: [build]
+      taskRef:
+        name: deploy-task
+      params:
+        - name: branch
+          value: "$(params.branch)"
+        - name: url
+          value: "$(params.repo-url)"
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+
